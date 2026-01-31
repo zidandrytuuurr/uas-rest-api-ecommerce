@@ -19,6 +19,7 @@ exports.addToCart = (req, res) => {
     });
   });
 };
+
 exports.getMyCart = (req, res) => {
   const userId = req.user.id;
 
@@ -39,11 +40,17 @@ exports.getMyCart = (req, res) => {
     });
   });
 };
-exports.getMyCart = (req, res) => {
-  const userId = req.user.id;
+
+exports.getCartByUserId = (req, res) => {
+  const userId = req.params.id;
 
   const sql = `
-    SELECT c.id, p.name, p.price, c.quantity
+    SELECT 
+      c.id AS cart_id,
+      p.id AS product_id,
+      p.name,
+      p.price,
+      c.quantity
     FROM carts c
     JOIN products p ON c.product_id = p.id
     WHERE c.user_id = ?
@@ -51,11 +58,57 @@ exports.getMyCart = (req, res) => {
 
   db.query(sql, [userId], (err, results) => {
     if (err) {
-      return res.status(500).json({ message: "Server error" });
+      return res.status(500).json({
+        message: "DB error",
+        error: err
+      });
     }
 
     res.json({
-      cart: results
+      user_id: userId,
+      items: results
     });
+  });
+};
+
+exports.updateCartQuantity = (req, res) => {
+  const userId = req.user.id;
+  const productId = req.params.productId;
+  const { quantity } = req.body;
+
+  const sql = `
+    UPDATE carts
+    SET quantity = ?
+    WHERE user_id = ? AND product_id = ?
+  `;
+
+  db.query(sql, [quantity, userId, productId], (err, result) => {
+    if (err) return res.status(500).json(err);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Item cart tidak ditemukan" });
+    }
+
+    res.json({ message: "Quantity cart berhasil diupdate" });
+  });
+};
+
+exports.deleteCartItem = (req, res) => {
+  const userId = req.user.id;
+  const productId = req.params.productId;
+
+  const sql = `
+    DELETE FROM carts
+    WHERE user_id = ? AND product_id = ?
+  `;
+
+  db.query(sql, [userId, productId], (err, result) => {
+    if (err) return res.status(500).json(err);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Item cart tidak ditemukan" });
+    }
+
+    res.json({ message: "Item berhasil dihapus dari cart" });
   });
 };

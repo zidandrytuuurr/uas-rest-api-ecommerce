@@ -2,6 +2,32 @@ const db = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+
+exports.register = (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: "Data tidak lengkap" });
+  }
+
+  const hashedPassword = bcrypt.hashSync(password, 10);
+
+  const sql =
+    "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)";
+
+  db.query(sql, [name, email, hashedPassword, "user"], (err) => {
+    if (err) {
+      return res.status(500).json({
+        message: "Register gagal",
+        error: err,
+      });
+    }
+
+    res.json({ message: "Register berhasil" });
+  });
+};
+
+
 exports.login = (req, res) => {
   const { email, password } = req.body;
 
@@ -35,32 +61,6 @@ exports.login = (req, res) => {
     res.json({
       message: "Login berhasil",
       token,
-    });
-  });
-};
-
-exports.register = (req, res) => {
-  const { name, email, password } = req.body;
-
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: "Data tidak lengkap" });
-  }
-
-  const hashedPassword = bcrypt.hashSync(password, 10);
-
-  const sql =
-    "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)";
-
-  db.query(sql, [name, email, hashedPassword, "user"], (err) => {
-    if (err) {
-      return res.status(500).json({
-        message: "Register gagal",
-        error: err,
-      });
-    }
-
-    res.json({
-      message: "Register berhasil",
     });
   });
 };

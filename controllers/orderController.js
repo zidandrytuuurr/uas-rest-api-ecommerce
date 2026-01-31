@@ -145,3 +145,132 @@ exports.getAdminSummary = (req, res) => {
   });
 };
 
+exports.getOrderItems = (req, res) => {
+  const orderId = req.params.orderId;
+
+  const sql = `
+    SELECT
+      oi.id,
+      oi.order_id,
+      oi.product_id,
+      oi.quantity,
+      oi.price,
+      p.name AS product_name
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.id
+    WHERE oi.order_id = ?
+  `;
+
+  db.query(sql, [orderId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err });
+    }
+
+    res.json({
+      order_id: orderId,
+      items: results
+    });
+  });
+};
+
+exports.getOrderById = (req, res) => {
+  const orderId = req.params.id;
+  const userId = req.user.id;
+
+  console.log("ORDER ID DARI URL:", orderId);
+  console.log("USER ID DARI TOKEN:", userId);
+
+  const sql = `
+    SELECT *
+    FROM orders
+    WHERE id = ? AND user_id = ?
+  `;
+
+  db.query(sql, [orderId, userId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ message: "DB error", error: err });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "Order tidak ditemukan" });
+    }
+
+    res.json(results[0]);
+  });
+};
+
+exports.createOrder = (req, res) => {
+  const userId = req.user.id;
+  const { items } = req.body;
+
+  db.query(
+    `INSERT INTO orders (user_id) VALUES (?)`,
+    [userId],
+    (err, result) => {
+      if (err) return res.status(500).json(err);
+
+      const orderId = result.insertId;
+
+      items.forEach(item => {
+        db.query(
+          `INSERT INTO order_items (order_id, product_id, quantity, price)
+           VALUES (?, ?, ?, ?)`,
+          [orderId, item.product_id, item.quantity, item.price]
+        );
+      });
+
+      res.json({ message: "Checkout berhasil", order_id: orderId });
+    }
+  );
+};
+
+exports.getCartByUserId = (req, res) => {
+  const userId = req.params.id;
+
+  const sql = `
+    SELECT c.product_id, p.name, p.price, c.quantity
+    FROM carts c
+    JOIN products p ON c.product_id = p.id
+    WHERE c.user_id = ?
+  `;
+
+  db.query(sql, [userId], (err, results) => {
+    if (err) return res.status(500).json(err);
+    res.json(results);
+  });
+};
+
+exports.getAllOrders = (req, res) => {
+  const sql = `
+    SELECT o.*, u.email
+    FROM orders o
+    JOIN users u ON o.user_id = u.id
+    ORDER BY o.id DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json(err);
+    res.json(results);
+  });
+};
+
+exports.getOrderByIdAdmin = (req, res) => {
+  const orderId = req.params.id;
+
+  const sql = `
+    SELECT o.*, u.email
+    FROM orders o
+    JOIN users u ON o.user_id = u.id
+    WHERE o.id = ?
+  `;
+
+  db.query(sql, [orderId], (err, results) => {
+    if (err) return res.status(500).json(err);
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "Order tidak ditemukan" });
+    }
+
+    res.json(results[0]);
+  });
+};

@@ -16,4 +16,28 @@ router.get(
   cartController.getMyCart
 );
 
+router.put(
+  "/cart/:productId",
+  authMiddleware,
+  cartController.updateCartQuantity
+);
+
+router.delete(
+  "/cart/:productId",
+  authMiddleware,
+  cartController.deleteCartItem
+);
+
+router.get(
+  "/cart/:id",
+  authMiddleware,
+  cartController.getCartByUserId
+);
+
+router.get(
+  "/cart/:id",
+  authMiddleware,
+  cartController.getCartByUserId
+);
+
 module.exports = router;

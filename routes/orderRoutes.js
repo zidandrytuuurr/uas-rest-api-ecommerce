@@ -5,9 +5,21 @@ const orderController = require("../controllers/orderController");
 const authMiddleware = require("../middleware/authMiddleware");
 const isAdmin = require("../middleware/isAdmin");
 
-router.post("/checkout", authMiddleware, orderController.checkout);
+router.post("/orders", authMiddleware, orderController.checkout);
 router.get("/orders", authMiddleware, orderController.getMyOrders);
 router.get("/orders/:id", authMiddleware, orderController.getOrderDetail);
+
+router.get(
+  "/admin/orders/:id",
+  authMiddleware,
+  isAdmin,
+  orderController.getOrderDetail
+);
+
+router.get(
+  "/order-items/:orderId",
+  orderController.getOrderItems
+);
 
 router.put(
   "/admin/orders/:id/status",
@@ -31,10 +43,11 @@ router.delete(
 );
 
 router.get(
-  "/admin/dashboard",
+  "/admin/Summary",
   authMiddleware,
   isAdmin,
   orderController.getAdminSummary
 );
+
 
 module.exports = router;
